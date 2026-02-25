@@ -10,20 +10,21 @@ services:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - php
+      - python
       - nodejs
   nodejs:
     image: node:alpine
     environment:
       NODE_ENV: production
-    working_dir: /home/app
+    working_dir: /app
     restart: always
     ports:
       - "8001:3000"
     volumes:
-      - ./node-app:/home/app
+      - ./node-app:/app
     depends_on:
       - php
-    command: ["npm", "run", "start:dev"]
+    command: node index.js
 
   php:
     image: webdevops/php-nginx:8.2
@@ -34,3 +35,12 @@ services:
       - "8003:80"
     environment:
       WEB_DOCUMENT_ROOT: /app/public
+  python:
+    image: python:3.9-slim
+    working_dir: /app
+    restart: always
+    ports:
+      - "8002:5000"
+    volumes:
+      - ./python-app:/app
+    command: sh -c "pip install flask && python app.py"
