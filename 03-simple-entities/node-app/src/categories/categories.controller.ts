@@ -1,31 +1,35 @@
-import {Body, Controller, Delete, Get, NotFoundException, Post, Query, Req} from '@nestjs/common';
-import {Pagination} from "nestjs-typeorm-paginate";
-import {Category} from "./category.entity";
-import {CategoriesService} from "./categories.service";
-import { Request } from 'express';
+import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { CategoriesService } from './categories.service';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
+import { Paginate, PaginateQuery } from 'nestjs-paginate';
 
 @Controller('categories')
 export class CategoriesController {
-    constructor(private readonly categoriesService: CategoriesService) {}
-    @Get('')
-    index(@Query('page') page = 1,  @Query('limit') limit = 10): Promise<Pagination<Category>> {
-        return this.categoriesService.paginate({limit:limit, page:  page});
-    }
+  constructor(private readonly categoriesService: CategoriesService) {}
 
-    @Get(':id')
-    show(id: number): Promise<Category | null> {
-        return this.categoriesService.findOne(id);
-    }
+  @Post()
+  create(@Body() createCategoryDto: CreateCategoryDto) {
+    return this.categoriesService.create(createCategoryDto);
+  }
 
-    @Post('')
-    store(@Body() categoryData: Category ): Promise<Category> {
-        return this.categoriesService.create(categoryData);
-    }
-    @Delete(':id')
-    delete(id:number): void {
-        const deleted =  this.categoriesService.remove(id);
-        if (!deleted) {
-            throw new NotFoundException(`Category #${id} not found`);
-        }
-    }
+  @Get()
+  findAll(@Paginate() query: PaginateQuery) {
+    return this.categoriesService.findAll(query);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.categoriesService.findOne(+id);
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto) {
+    return this.categoriesService.update(+id, updateCategoryDto);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.categoriesService.remove(+id);
+  }
 }
