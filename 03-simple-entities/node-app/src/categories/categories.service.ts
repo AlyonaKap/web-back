@@ -1,32 +1,55 @@
-import { Injectable } from '@nestjs/common';
-import {InjectRepository} from "@nestjs/typeorm";
-import {Category} from "./category.entity";
-import {DeleteResult, Repository} from "typeorm";
-import {IPaginationOptions, paginate, Pagination} from "nestjs-typeorm-paginate";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { paginate, PaginateQuery, Paginated, FilterOperator } from 'nestjs-paginate';
+import { Category } from './entities/category.entity';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Injectable()
 export class CategoriesService {
-    constructor(
-        @InjectRepository(Category)
-        private repository: Repository<Category>,
-    ) {}
+  constructor(
+    @InjectRepository(Category)
+    private readonly categoryRepository: Repository<Category>,
+  ) {}
 
-    public create(categoryData: Category): Promise<Category> {
-        return this.repository.save(categoryData);
-    }
+  create(createCategoryDto: CreateCategoryDto): Promise<Category> {
+    const category = this.categoryRepository.create(createCategoryDto);
+    return this.categoryRepository.save(category);
+  }
 
-    public findAll(): Promise<Category[]> {
-        return this.repository.find();
-    }
+  findAll(query: PaginateQuery): Promise<Paginated<Category>> {
+    return paginate(query, this.categoryRepository, {
+      sortableColumns: ['id', 'name'],
+      defaultSortBy: [['id', 'ASC']],
+      searchableColumns: ['name', 'description'],
+      filterableColumns: {
+        name: [FilterOperator.EQ, FilterOperator.ILIKE],
+      },
+      defaultLimit: 10,
+      relations: ['products'],
+    });
+  }
 
-    public findOne(id: number): Promise<Category | null> {
-        return this.repository.findOneBy({ id });
+  async findOne(id: number): Promise<Category> {
+    const category = await this.categoryRepository.findOne({
+      where: { id },
+      relations: ['products'],
+    });
+    if (!category) {
+      throw new NotFoundException(`Category #${id} not found`);
     }
+    return category;
+  }
 
-    public  remove(id: number): Promise<DeleteResult>{
-        return this.repository.delete(id);
-    }
-    public paginate(options: IPaginationOptions): Promise<Pagination<Category>> {
-        return paginate<Category>(this.repository, options);
-    }
+  async update(id: number, updateCategoryDto: UpdateCategoryDto): Promise<Category> {
+    const category = await this.findOne(id);
+    Object.assign(category, updateCategoryDto);
+    return this.categoryRepository.save(category);
+  }
+
+  async remove(id: number): Promise<void> {
+    const category = await this.findOne(id);
+    await this.categoryRepository.remove(category);
+  }
 }
