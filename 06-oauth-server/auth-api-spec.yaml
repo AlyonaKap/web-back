@@ -1,0 +1,49 @@
+openapi: 3.0.0
+info:
+  title: Keycloak Lab API
+  description: API for testing Keycloak authorization
+  version: 1.0.0
+
+security:
+  - keycloak_auth: [openid, profile]
+
+paths:
+  /test-auth:
+    get:
+      summary: Auth Test Endpoint
+      description: Endpoint to test Keycloak authentication
+      responses:
+        '200':
+          description: Successfully authenticated
+        '401':
+          description: Authentication failed
+        '403':
+          description: Authorization failed
+
+components:
+  securitySchemes:
+    keycloak_auth:
+      type: oauth2
+      description: Keycloak OAuth2 Authentication
+      flows:
+        authorizationCode:
+          authorizationUrl: http://localhost:8080/realms/Alyona/protocol/openid-connect/auth
+          tokenUrl: http://localhost:8080/realms/Alyona/protocol/openid-connect/token
+          scopes:
+            openid: "Required for OpenID Connect"
+            profile: "Access to profile information"
+
+        implicit:
+          authorizationUrl: http://localhost:8080/realms/Alyona/protocol/openid-connect/auth
+          scopes:
+            openid: "OpenID scope"
+
+        password:
+          tokenUrl: http://localhost:8080/realms/Alyona/protocol/openid-connect/token
+          scopes:
+            openid: "OpenID scope"
+
+        clientCredentials:
+          tokenUrl: http://localhost:8080/realms/Alyona/protocol/openid-connect/token
+          scopes:
+            openid: "OpenID scope"
